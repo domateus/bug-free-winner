@@ -1,0 +1,50 @@
+import * as Plot from "@observablehq/plot";
+import * as d3 from "d3";
+
+const matrix = [[3, 2, 5], [1, 7, 2], [1, 1, 8]]
+const nodes = matrix.map((m, i) => d3.pointRadial(((2 - i) * 2 * Math.PI) / matrix.length, 100))
+const edgy = [
+  [
+      [nodes[0][0] - 7, nodes[0][1]],
+      [nodes[0][0], nodes[0][1] + 7],
+      3
+  ],
+]
+const edges = matrix.flatMap((m, i) => m.map((value, j) => ([nodes[i], nodes[j], value])))
+
+ useEffect(() => {
+    const plot = Plot.plot({
+      inset: 30,
+      aspectRatio: 1,
+      axis: null,
+      marks: [
+        Plot.dot(nodes, {r: 20}),
+        Plot.arrow(edgy, {
+          x1: ([[x1]]) => x1,
+          y1: ([[, y1]]) => y1,
+          x2: ([, [x2]]) => x2,
+          y2: ([, [, y2]]) => y2,
+          bend: 90,
+          strokeWidth: () => 2,
+          strokeLinejoin: "miter",
+          headLength: 10,
+          inset: 5,
+          
+        }),
+        Plot.text(edgy, {
+          x: ([[x1, y1], [x2, y2]]) => (x1 + x2) / 2 + (y1 - y2) ,
+          y: ([[x1, y1], [x2, y2]]) => (y1 + y2) / 2 - (x1 - x2) ,
+          text: ([,, value]) => value
+        })
+      ]
+    })
+    containerRef?.current?.append(plot);
+    return () => plot.remove();
+  }, []);
+
+ {/* <div className="w-1/2 h-full p-4">
+        <h2 className="text-2xl font-bold mb-4 ">Finite Automaton</h2>
+        <div className="text-black" ref={containerRef}/>
+         
+        
+      </div> */}

@@ -1,113 +1,95 @@
-import Image from 'next/image'
+"use client"
+import React from 'react'
+
+import {useState} from "react";
+
+const parseRules = (rules: string) => {
+  const lines = rules.split('\n')
+  const grammar: {[key: string]: string[]} = {}
+  for (const line of lines) {
+    const [key, values] = line.split('->')
+    grammar[key.trim()] = values.trim().split("|").map(v => v.trim())
+  }
+  return grammar
+}
+
+const simulate = (grammar: {[key: string]: string[]}, input: string) => {
+  if (input.length === 0) return {result: false, message: "Input vazio"}
+  const pathTaken: string[] = []
+  let rejection = ""
+  const acceptNext = (currentState: string, input: string): boolean => {
+    const transitions = grammar[currentState]
+    let accept = false
+    const char = input[0]
+    const anyTransition = transitions.find(t => t.startsWith(char))
+    if (input.length === 1) {
+      accept = !!anyTransition && anyTransition === char
+      if (accept) {
+        pathTaken.push(anyTransition!)
+      } else {
+        if (!anyTransition) {
+          rejection = `Sem regra para ${currentState}(${char})`
+        } else {
+          rejection = `Transição ${currentState}(${char}) -> ${anyTransition[1]} não termina em estado de aceitação`
+        }
+      }
+      return accept
+    } else {
+      if (!anyTransition) {
+        rejection = `Sem regra para ${currentState}(${char})`
+      }
+    }
+    if (transitions) {
+      console.log("State: ", currentState, "Input: ", input, transitions)
+      for (const rule of transitions) {
+        if (rule.length > 1 && char === rule[0]) {
+          console.log("Rule: ", rule)
+          accept = accept || acceptNext(rule[1], input.slice(1, input.length))
+          if (accept) {
+            pathTaken.push(rule)
+          }
+        } else if (char === rule) {
+        
+        }
+      }
+    }
+    return accept
+  }
+  const result = acceptNext("S", input)
+  pathTaken.push("S")
+  return {result, message: result ? pathTaken.reverse().join(" -> ") : rejection}
+}
 
 export default function Home() {
+  const [rules, setRules] = useState('')
+  const [input, setInput] = useState('')
+  const [result, setResult] = useState<{result: boolean; message: string}>()
+ 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <div className="z-10 max-w-5xl w-full items-center justify-between font-mono text-sm lg:flex">
-        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
-          Get started by editing&nbsp;
-          <code className="font-mono font-bold">src/app/page.tsx</code>
-        </p>
-        <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:h-auto lg:w-auto lg:bg-none">
-          <a
-            className="pointer-events-none flex place-items-center gap-2 p-8 lg:pointer-events-auto lg:p-0"
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{' '}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className="dark:invert"
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
+    <div className="flex h-screen w-full bg-zinc-800 flex justify-center caret-black">
+      <div className="w-1/2 h-full p-4">
+      <h2 className="text-2xl font-bold mb-4">Regras da gramática</h2>
+        <div className="space-y-4">
+          <div className="mb-4">
+            <textarea className="w-full rounded-md text-black caret-black border-transparent focus:border-transparent focus:ring-0 p-2" id="rules" rows={6} placeholder="E.g  . S -> aS|bA" onChange={e => setRules(e.target.value)} value={rules} />
+          </div>
+          <h2 className="text-2xl font-bold mb-4">String de entrada</h2>
+          <input className="w-full caret-black text-black" type="text" placeholder="E.g: 001101001" onChange={e => setInput(e.target.value)} value={input} />
+          <button className="w-full bg-blue-500 text-white" type="submit" onClick={() => {
+              const grammar = parseRules(rules)
+              setResult(simulate(grammar, input))
+              console.log(simulate(grammar, input))
+            }}>
+            Simular Autômato
+          </button>
+          {result && <div className="mt-4">
+            <h2 className="text-2xl font-bold mb-4">Resultado</h2>
+            <div className="text-xl font-bold mb-4">{result.result ? "Aceito" : "Rejeitado"}</div>
+            <div className="text-xl font-bold mb-4">{result.message}</div>
+          </div>}
         </div>
       </div>
-
-      <div className="relative flex place-items-center before:absolute before:h-[300px] before:w-[480px] before:-translate-x-1/2 before:rounded-full before:bg-gradient-radial before:from-white before:to-transparent before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-[240px] after:translate-x-1/3 after:bg-gradient-conic after:from-sky-200 after:via-blue-200 after:blur-2xl after:content-[''] before:dark:bg-gradient-to-br before:dark:from-transparent before:dark:to-blue-700 before:dark:opacity-10 after:dark:from-sky-900 after:dark:via-[#0141ff] after:dark:opacity-40 before:lg:h-[360px] z-[-1]">
-        <Image
-          className="relative dark:drop-shadow-[0_0_0.3rem_#ffffff70] dark:invert"
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
-
-      <div className="mb-32 grid text-center lg:max-w-5xl lg:w-full lg:mb-0 lg:grid-cols-4 lg:text-left">
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Docs{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Find in-depth information about Next.js features and API.
-          </p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Learn{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Learn about Next.js in an interactive course with&nbsp;quizzes!
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Templates{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Explore starter templates for Next.js.
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Deploy{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
-    </main>
+     
+    </div>
   )
 }
